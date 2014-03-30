@@ -2,6 +2,7 @@ from random import randint
 
 MINE = 9
 
+
 class MinesweeperField(object):
     def __init__(self, width, height, num_mines):
         board = []
@@ -87,6 +88,7 @@ def new_board(difficulty):
         raise ValueError('Difficulty has to be in range [0, 2]')
 
     return MinesweeperField(*args)
+
 
 if __name__ == '__main__':
     print('Medium Board')
