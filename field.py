@@ -112,8 +112,11 @@ class MinesweeperField(object):
             pairs = eight_directions(x, y)
             print(pairs)
             for py, px in pairs:
-                revealed_value = self[py][px]
-                revealed_tuple = (px, py, revealed_value)
+                try:
+                    revealed_tuple = (px, py, self[py][px])
+                except IndexError:
+                    continue
+
                 if not revealed_tuple in revealed:
                     revealed.add(revealed_tuple)
                     revealed = self._reveal_cell_dfs(px, py, revealed)
