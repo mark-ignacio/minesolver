@@ -1,11 +1,15 @@
 from random import randint
 
-MINE = 9
+MINE = '*'
+
+
+class LostGameException(Exception):
+    pass
 
 
 class MinesweeperField(object):
     def __init__(self, width, height, num_mines):
-        board = []
+        field = []
 
         if num_mines > width * height:
             raise ValueError('Too many mines to be placed')
@@ -15,25 +19,35 @@ class MinesweeperField(object):
             row = []
             for j in range(width):
                 row.append(0)
-            board.append(row)
+            field.append(row)
 
-        self.board = board
+        self._field = field
         self.width = width
         self.height = height
         self.num_mines = num_mines
         self._generate_mines()
         self._mark_board()
 
+        # utility
+        self.touched = set()
+
     def __getitem__(self, row):
-        return self.board[row]
+        return self._field[row]
+
+    def __str__(self):
+        field = []
+        for row in self[::-1]:
+            field.append('\t'.join(str(x) for x in row))
+
+        return '\n'.join(field)
 
     def _generate_mines(self):
         positions = self._generate_mine_positions(self.width, self.height, self.num_mines)
         for x, y in positions:
-            self.board[y][x] = MINE
+            self._field[y][x] = MINE
 
     def _mark_board(self):
-        board = self.board
+        board = self._field
         for y, row in enumerate(board):
             for x, val in enumerate(row):
                 # skip mine
@@ -41,16 +55,7 @@ class MinesweeperField(object):
                     continue
 
                 adjacent_mines = 0
-                pairs = (
-                    (y - 1, x - 1),
-                    (y - 1, x),
-                    (y - 1, x + 1),
-                    (y, x - 1),
-                    (y, x + 1),
-                    (y + 1, x - 1),
-                    (y + 1, x),
-                    (y + 1, x + 1)
-                )
+                pairs = eight_directions(x, y)
                 for rindex, cindex in pairs:
                     try:
                         if board[rindex][cindex] == MINE:
@@ -75,8 +80,54 @@ class MinesweeperField(object):
 
         return mines
 
+    def get_starting_position(self):
+        for y, row in enumerate(self):
+            for x, cell in enumerate(row):
+                if cell == 0:
+                    return x, y
 
-def new_board(difficulty):
+    def reveal_cell(self, x, y):
+        cell_value = self[y][x]
+        revealed = {(x, y, cell_value)}
+
+        if cell_value == MINE:
+            raise LostGameException('Touched a mine!')
+        elif cell_value > 0:
+            return revealed
+        elif cell_value == 0:
+            # reveal cells by DFS in eight directions
+            return self._reveal_cell_dfs(x, y, revealed)
+
+    def _reveal_cell_dfs(self, x, y, revealed):
+        assert (x >= 0 and y >= 0)
+        try:
+            cell_value = self[y][x]
+        except IndexError:
+            return revealed
+
+        print('Touching ({},{}) - {}'.format(x, y, cell_value))
+
+        # only recurse if this isn't next to anything
+        if cell_value == 0:
+            pairs = eight_directions(x, y)
+            print(pairs)
+            for py, px in pairs:
+                revealed_value = self[py][px]
+                revealed_tuple = (px, py, revealed_value)
+                if not revealed_tuple in revealed:
+                    revealed.add(revealed_tuple)
+                    revealed = self._reveal_cell_dfs(px, py, revealed)
+                else:
+                    print('Already went to ({}, {})'.format(px, py))
+        # elif cell_value == MINE:
+        #     raise ValueError('Touched a mine during DFS!')
+        else:
+            revealed.add((x, y, cell_value))
+
+        return revealed
+
+
+def new_field(difficulty):
     assert isinstance(difficulty, int)
     if difficulty == 0:
         args = (9, 9, 10)
@@ -90,7 +141,31 @@ def new_board(difficulty):
     return MinesweeperField(*args)
 
 
+def eight_directions(x, y):
+    pairs = [
+        (y, x + 1),
+        (y + 1, x),
+        (y + 1, x + 1)
+    ]
+
+    if x > 0:
+        pairs.extend((
+            (y, x - 1),
+            (y + 1, x - 1),
+        ))
+
+    if y > 0:
+        if x > 0:
+            pairs.append((y - 1, x - 1))
+
+        pairs.extend((
+            (y - 1, x),
+            (y - 1, x + 1),
+        ))
+
+    return sorted(pairs, key=lambda k: k[0])
+
+
 if __name__ == '__main__':
     print('Medium Board')
-    for row in new_board(1).board:
-        print('\t'.join(str(x) for x in row))
+    print(new_field(1))
