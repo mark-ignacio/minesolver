@@ -6,8 +6,8 @@ FLAG = '⚐'
 QUESTION = '?'
 
 
-def simple_solve(known_field):
-    modifications_made, reveal_orders = False, set()
+def simple_solve(num_flags, known_field):
+    reveal_orders = set()
     # solves exact/sure matches of "number is 2, unknown is 2"
     for y, row in enumerate(known_field):
         for x, cell in enumerate(row):
@@ -24,9 +24,9 @@ def simple_solve(known_field):
                 elif cell - len(flagged_cells) == len(unknown_cells):
                     for ax, ay in unknown_cells:
                         known_field[ay][ax] = FLAG
-                        modifications_made = True
+                        num_flags += 1
 
-    return modifications_made, reveal_orders
+    return num_flags, reveal_orders
 
 
 def get_value_around(field, x, y, value):
@@ -60,6 +60,8 @@ def solve(field):
         known[ry][rx] = val
 
     reveal_orders = set()
+    num_flags = 0
+    solved = True
     while True:
         for x, y in reveal_orders:
             revealed = field.reveal_cell(x, y)
@@ -67,21 +69,21 @@ def solve(field):
             for rx, ry, val in revealed:
                 known[ry][rx] = val
 
-        reveal_orders = None
-        while True:
-            mods_made, reveal_orders = simple_solve(known)
-            print(reveal_orders)
-            if not mods_made:
-                break
+        reveal_orders = set()
         if not reveal_orders:
+            num_flags, reveal_orders = simple_solve(num_flags, known)
+        if not reveal_orders:
+            solved = num_flags == field.num_mines
             break
 
-    print('\n Known Board')
+    print('\nKnown Board')
     for row in reversed(known):
         print('\t'.join(str(x) for x in row))
 
     print('\nField')
     print(field)
+    if solved:
+        print('\nBoard solved!')
 
 
 def main():
