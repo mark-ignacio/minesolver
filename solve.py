@@ -7,20 +7,26 @@ QUESTION = '?'
 
 
 def simple_solve(known_field):
-    modifications_made = False
+    modifications_made, reveal_orders = False, set()
     # solves exact/sure matches of "number is 2, unknown is 2"
     for y, row in enumerate(known_field):
         for x, cell in enumerate(row):
             # first strategy: count the number of unknown spaces
             if isinstance(cell, int) and cell > 0:
                 unknown_cells = get_unknown_around(x, y, known_field)
-                # if cell value ==len(unknown), flag them all!
-                if cell == len(unknown_cells):
+                flagged_cells = get_flags_around(x, y, known_field)
+
+                # if enough cells are flagged, order all unknowns to be touched
+                if cell == len(flagged_cells):
+                    reveal_orders = reveal_orders.union(unknown_cells)
+
+                # if cell - flagged == unknown, flag them all!
+                elif cell - len(flagged_cells) == len(unknown_cells):
                     for ax, ay in unknown_cells:
                         known_field[ay][ax] = FLAG
                         modifications_made = True
 
-    return modifications_made
+    return modifications_made, reveal_orders
 
 
 def get_value_around(field, x, y, value):
@@ -50,12 +56,24 @@ def solve(field):
         known.append(row)
     x, y = field.get_starting_position()
     revealed = field.reveal_cell(x, y)
+    for rx, ry, val in revealed:
+        known[ry][rx] = val
 
-    for x, y, val in revealed:
-        known[y][x] = val
-
+    reveal_orders = set()
     while True:
-        if not simple_solve(known):
+        for x, y in reveal_orders:
+            revealed = field.reveal_cell(x, y)
+
+            for rx, ry, val in revealed:
+                known[ry][rx] = val
+
+        reveal_orders = None
+        while True:
+            mods_made, reveal_orders = simple_solve(known)
+            print(reveal_orders)
+            if not mods_made:
+                break
+        if not reveal_orders:
             break
 
     print('\n Known Board')
