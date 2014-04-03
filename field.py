@@ -1,4 +1,5 @@
 from random import randint
+import logging
 
 MINE = '*'
 
@@ -105,12 +106,12 @@ class MinesweeperField(object):
         except IndexError:
             return revealed
 
-        print('Touching ({},{}) - {}'.format(x, y, cell_value))
+        logging.debug('Touching ({},{}) - {}'.format(x, y, cell_value))
 
         # only recurse if this isn't next to anything
         if cell_value == 0:
             pairs = eight_directions(x, y)
-            print(pairs)
+            logging.debug('Probing pairs: {}'.format(pairs))
             for py, px in pairs:
                 try:
                     revealed_tuple = (px, py, self[py][px])
@@ -121,7 +122,7 @@ class MinesweeperField(object):
                     revealed.add(revealed_tuple)
                     revealed = self._reveal_cell_dfs(px, py, revealed)
                 else:
-                    print('Already went to ({}, {})'.format(px, py))
+                    logging.debug('Already went to ({}, {})'.format(px, py))
         # elif cell_value == MINE:
         #     raise ValueError('Touched a mine during DFS!')
         else:
