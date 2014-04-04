@@ -28,6 +28,7 @@ class MinesweeperField(object):
         self.num_mines = num_mines
         self._generate_mines()
         self._mark_board()
+        self.cells_left = width * height
 
         # utility
         self.touched = set()
@@ -93,11 +94,17 @@ class MinesweeperField(object):
 
         if cell_value == MINE:
             raise LostGameException('Touched a mine!')
-        elif cell_value > 0:
-            return revealed
         elif cell_value == 0:
             # reveal cells by DFS in eight directions
-            return self._reveal_cell_dfs(x, y, revealed)
+            revealed = self._reveal_cell_dfs(x, y, revealed)
+
+        # subtract for winning condition
+        self.cells_left -= len(revealed)
+        return revealed
+
+    @property
+    def won(self):
+        return self.num_mines == self.cells_left
 
     def _reveal_cell_dfs(self, x, y, revealed):
         assert (x >= 0 and y >= 0)
